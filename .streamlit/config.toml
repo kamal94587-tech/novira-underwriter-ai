@@ -1,13 +1,8 @@
 [server]
 headless = true
-port = 8501
 enableCORS = false
+enableXsrfProtection = false
+port = 8501
 
 [theme]
 base = "dark"
-
-[runner]
-magicEnabled = false
-
-[app]
-file = "novira_underwriter_ai_enhanced_v2/app/streamlit_app.py"
