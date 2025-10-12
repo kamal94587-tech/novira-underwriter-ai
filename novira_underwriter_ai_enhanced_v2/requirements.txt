@@ -1,7 +1,9 @@
-streamlit
 fastapi
+uvicorn
+pydantic
 scikit-learn
 pandas
 numpy
 joblib
+streamlit
 shap
