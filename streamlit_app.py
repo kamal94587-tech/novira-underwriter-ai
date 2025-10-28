@@ -205,5 +205,23 @@ if score_btn:
         c2.metric("Eligibility", elig)
         c3.metric("Suggested Premium", f"${prem:,.2f}")
 
-        with st.expander("🧪 D
+                with st.expander("🧪 Debug: feature row", expanded=False):
+            st.dataframe(X)
+    except Exception as e:
+        st.error("Scoring failed:")
+        st.exception(e)
+
+st.markdown("---")
+st.subheader("📦 Model placement (when you have real artifacts)")
+st.code(
+    "novira_underwriter_ai_enhanced_v2/model/\n"
+    "  ├─ risk_model.pkl\n"
+    "  ├─ scaler.pkl\n"
+    "  └─ feature_columns.pkl\n\n"
+    "# OR (repo root)\n"
+    "risk_model.pkl\nscaler.pkl\nfeature_columns.pkl",
+    language="bash",
+)
+st.info("After uploading real artifacts: ⋮ → Clear cache → Reboot.", icon="ℹ️")
+
 
