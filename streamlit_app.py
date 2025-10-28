@@ -233,6 +233,44 @@ if score_btn:
     except Exception as e:
         st.error("Scoring failed:")
         st.exception(e)
+# ---------------------------
+# UI — layout + score button (define BEFORE using it)
+# ---------------------------
+left, right = st.columns([0.6, 0.4])
+
+with left:
+    st.subheader("Test Shipment")
+    st.caption("Click to score a synthetic shipment. Uses dummy model if real artifacts aren’t uploaded yet.")
+    score_btn = st.button("⚡ Score test shipment", type="primary")
+
+with right:
+    st.subheader("Results")
+
+# Safety: if this file ever gets rearranged, avoid NameError
+if "score_btn" not in locals():
+    score_btn = False
+
+# ---------------------------
+# Score on click
+# ---------------------------
+if score_btn:
+    try:
+        X = build_test_row(feature_columns)
+        try:
+            X_in = scaler.transform(X)
+        except Exception:
+            X_in = X
+
+        risk = predict_risk_index(model, X_in)
+        elig = eligibility_from_risk(risk)
+        prem = suggested_premium_usd(risk)
+
+        c1, c2, c3 = right.columns(3)
+        c1.metric("Risk Index", f"{risk:.1f} / 100")
+        c2.metric("Eligibility", elig)
+        c3.metric("Suggested Premium", f"${prem:,.2f}")
+
+        with st.expander("Debug: feature
 
 st.subheader("📦 Model placement (when you have real artifacts)")
 st.code(
