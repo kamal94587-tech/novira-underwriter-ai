@@ -198,28 +198,6 @@ with left:
     st.caption("Click to score a synthetic shipment. Uses dummy model if real artifacts aren’t uploaded yet.")
     score_btn = st.button("⚡ Score test shipment", type="primary")
 
-with right:
-    st.subheader("Results")
-if score_btn:
-    try:
-        X = build_test_row(feature_columns)
-        try:
-            X_in = scaler.transform(X)
-        except Exception:
-            X_in = X
-
-        risk = predict_risk_index(model, X_in)
-        elig = eligibility_from_risk(risk)
-        prem = suggested_premium_usd(risk)
-
-        c1, c2, c3 = right.columns(3)
-        c1.metric("Risk Index", f"{risk:.1f} / 100")
-        c2.metric("Eligibility", elig)
-        c3.metric("Suggested Premium", f"${prem:,.2f}")
-
-        with st.expander("Debug: feature row", expanded=False):
-            st.dataframe(X)
-
     except Exception as e:
         st.error("Scoring failed:")
         st.exception(e)
