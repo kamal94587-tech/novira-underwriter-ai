@@ -20,12 +20,11 @@ def find_first(*rel_paths: str):
         if p.exists():
             return p
     return None
-
 def resolve_paths():
     return (
-        find_first("risk_model.pkl", "novira_underwriter_ai_enhanced_v2/model/risk_model.pkl"),
-        find_first("scaler.pkl", "novira_underwriter_ai_enhanced_v2/model/scaler.pkl"),
-        find_first("feature_columns.pkl", "novira_underwriter_ai_enhanced_v2/model/feature_columns.pkl"),
+        find_first("novira_underwriter_ai_enhanced_v2/model/risk_model.pkl", "risk_model.pkl"),
+        find_first("novira_underwriter_ai_enhanced_v2/model/scaler.pkl", "scaler.pkl"),
+        find_first("novira_underwriter_ai_enhanced_v2/model/feature_columns.pkl", "feature_columns.pkl"),
     )
 
 RISK_PKL, SCALER_PKL, FEATS_PKL = resolve_paths()
