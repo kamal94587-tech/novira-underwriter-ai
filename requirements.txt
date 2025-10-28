@@ -1,9 +1,6 @@
-fastapi
-uvicorn
-pydantic
-scikit-learn
+streamlit==1.50.0
 pandas
 numpy
-joblib
-streamlit
+scikit-learn
 shap
+joblib
