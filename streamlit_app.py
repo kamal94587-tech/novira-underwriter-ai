@@ -198,9 +198,6 @@ with left:
     st.caption("Click to score a synthetic shipment. Uses dummy model if real artifacts aren’t uploaded yet.")
     score_btn = st.button("⚡ Score test shipment", type="primary")
 
-    except Exception as e:
-        st.error("Scoring failed:")
-        st.exception(e)
 # ---------------------------
 # UI — layout + score button (define BEFORE using it)
 # ---------------------------
