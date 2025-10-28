@@ -9,7 +9,11 @@ import numpy as np
 import joblib
 
 st.set_page_config(page_title="Novira.ai — Underwriter Risk Scorecard", page_icon="📊", layout="wide")
-st.title("📊 Novira.ai — Underwriter Risk Scorecard (Minimal)")
+st.title("🧠 Novira.ai — Underwriter Risk Scorecard (Minimal)")
+
+# Safety: avoid NameError if any early code references score_btn
+if "score_btn" not in globals():
+    score_btn = False
 
 BASE = Path(__file__).resolve().parent
 MODEL_DIR1 = BASE / "novira_underwriter_ai_enhanced_v2" / "model"
