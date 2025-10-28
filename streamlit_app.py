@@ -140,3 +140,125 @@ load_ok, model, scaler, feature_columns = True, None, None, None
 for label, path_var in [("feature_columns.pkl", FEATS_PKL), ("scaler.pkl", SCALER_PKL), ("risk_model.pkl", RISK_PKL)]:
     try:
         obj = _require(path_var, label)
+        if label == "feature_columns.pkl": feature_columns = obj
+        elif label == "scaler.pkl":        scaler = obj
+        elif label == "risk_model.pkl":    model = obj
+    except Exception as e:
+        load_ok = False
+        st.error(f"{label} load error")
+        st.code("".join(traceback.format_exception_only(type(e), e)))
+
+if not load_ok:
+    st.warning("Artifacts missing or unreadable. See errors above. After fixing, use ⋮ → Clear cache → Reboot.", icon="⚠️")
+
+# ---------------------------
+# Build a feature row matching feature_columns
+# ---------------------------
+def build_test_row(cols):
+    if isinstance(cols, (list, tuple, np.ndarray, pd.Index)):
+        names = list(cols)
+    elif isinstance(cols, dict) and "columns" in cols:
+        names = list(cols["columns"])
+    else:
+        names = []
+    data = {c: 0 for c in names}
+    # Nudge a few fields if they exist
+    maybe = {
+        "shipment_value_usd": 45000,
+        "distance_km": 1200,
+        "days_in_transit": 6,
+        "is_international": 0,
+        "is_perishable": 0,
+        "temperature_req_c": 5,
+        "route_risk_score": 30,
+        "carrier_reliability": 85,
+        "past_claims_count": 0,
+        "package_fragility": 1,
+        "weather_severity_index": 10,
+        "port_congestion_index": 15,
+    }
+    for k, v in maybe.items():
+        if k in data: data[k] = v
+    return pd.DataFrame([data], columns=names)
+
+# ---------------------------
+# Scoring utilities
+# ---------------------------
+def to_0_100(x: float) -> float:
+    try: return float(np.clip(x, 0, 100))
+    except Exception: return 0.0
+
+def predict_risk_index(model, X):
+    if hasattr(model, "predict_proba"):
+        proba = model.predict_proba(X)
+        proba = np.asarray(proba)
+        if proba.ndim == 2 and proba.shape[1] >= 2:
+            return to_0_100(proba[0, 1] * 100.0)
+        elif proba.ndim == 1:
+            return to_0_100(proba[0] * 100.0)
+    y = model.predict(X)
+    y = float(np.asarray(y).ravel()[0])
+    return to_0_100(y)
+
+def eligibility_from_risk(r):
+    if r < 40:  return "Bind"
+    if r < 70:  return "Review"
+    return "Decline"
+
+def suggested_premium_usd(r, base=1200.0):
+    return float(round(base * (1.0 + r/150.0), 2))
+
+# ---------------------------
+# UI
+# ---------------------------
+left, right = st.columns([0.6, 0.4])
+with left:
+    st.subheader("Test Shipment")
+    st.caption("Click to score a synthetic shipment (uses bootstrap model if your real model isn't uploaded).")
+    score_btn = st.button("⚡ Score test shipment", type="primary", disabled=not load_ok)
+
+with right:
+    st.subheader("Results")
+
+if score_btn and load_ok:
+    try:
+        X = build_test_row(feature_columns)
+        X_in = X
+        if hasattr(scaler, "transform"):
+            try:
+                X_in = scaler.transform(X)
+            except Exception as e:
+                st.warning("Scaler.transform failed — using unscaled features.")
+                st.code("".join(traceback.format_exception_only(type(e), e)))
+
+        risk_idx = predict_risk_index(model, X_in)
+        elig = eligibility_from_risk(risk_idx)
+        prem = suggested_premium_usd(risk_idx)
+
+        m1, m2, m3 = right.columns(3)
+        m1.metric("Risk Index", f"{risk_idx:.1f} / 100")
+        m2.metric("Eligibility", elig)
+        m3.metric("Suggested Premium", f"${prem:,.2f}")
+
+        with st.expander("🧪 Debug: feature row", expanded=False):
+            st.dataframe(X)
+
+    except Exception as e:
+        st.error("Scoring failed:")
+        st.exception(e)
+
+# ---------------------------
+# Placement guidance (still shown so you can swap in real models later)
+# ---------------------------
+st.markdown("---")
+st.subheader("📦 Model placement (when you have real artifacts)")
+st.code(
+    "novira_underwriter_ai_enhanced_v2/model/\n"
+    "  ├─ risk_model.pkl\n"
+    "  ├─ scaler.pkl\n"
+    "  └─ feature_columns.pkl\n\n"
+    "# OR (repo root)\n"
+    "risk_model.pkl\nscaler.pkl\nfeature_columns.pkl",
+    language="bash",
+)
+st.info("After uploading real artifacts: ⋮ → Clear cache → Reboot.", icon="ℹ️")
