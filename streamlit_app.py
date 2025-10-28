@@ -8,6 +8,81 @@ import pandas as pd
 import numpy as np
 import joblib
 
+# ---- UI helpers (styles + small formatters) ----
+st.markdown("""
+<style>
+.result-card { padding: 1.0rem 1.2rem; border: 1px solid rgba(255,255,255,0.08); background: #121418; border-radius: 16px; }
+.kpi-title { font-size: 0.9rem; opacity: 0.7; margin-bottom: 0.25rem; }
+.kpi-value { font-size: 2.0rem; font-weight: 700; line-height: 1.1; }
+.badge { display:inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
+.badge-green { background: rgba(34,197,94,0.15); color: #34d399; border: 1px solid rgba(34,197,94,0.25); }
+.badge-amber { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+.badge-red   { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+.progress-wrap { width:100%; background:#1b1f26; border-radius: 10px; height: 14px; overflow: hidden; }
+.progress-bar  { height: 100%; border-radius: 10px; }
+</style>
+""", unsafe_allow_html=True)
+
+def _format_usd(x: float) -> str:
+    return f"${x:,.2f}"
+
+def _elig_badge(elig_text: str) -> str:
+    text = elig_text.strip().lower()
+    if text == "bind":
+        cls = "badge badge-green"; label = "Bind"
+    elif text == "review":
+        cls = "badge badge-amber"; label = "Review"
+    else:
+        cls = "badge badge-red"; label = "Decline"
+    return f'<span class="{cls}">{label}</span>'
+
+def _risk_color(risk_0_to_100: float) -> str:
+    r = max(0, min(100, risk_0_to_100))
+    if r <= 50:
+        t = r / 50.0
+        start = (52, 211, 153)   # green
+        end   = (245, 158, 11)   # amber
+    else:
+        t = (r - 50) / 50.0
+        start = (245, 158, 11)   # amber
+        end   = (239, 68, 68)    # red
+    c = tuple(int(s + (e - s) * t) for s, e in zip(start, end))
+    return f"rgb({c[0]},{c[1]},{c[2]})"
+
+def render_result_card(risk: float, elig_text: str, premium_usd: float, feature_row_df):
+    with st.container(border=False):
+        st.markdown('<div class="result-card">', unsafe_allow_html=True)
+        c1, c2, c3 = st.columns([0.9, 0.6, 0.8])
+
+        # Risk Index
+        with c1:
+            st.markdown('<div class="kpi-title">Risk Index</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="kpi-value">{risk:.1f} / 100</div>', unsafe_allow_html=True)
+            bar_color = _risk_color(risk)
+            st.markdown(
+                f"""
+                <div class="progress-wrap">
+                    <div class="progress-bar" style="width:{risk:.1f}%; background: {bar_color};"></div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        # Eligibility
+        with c2:
+            st.markdown('<div class="kpi-title">Eligibility</div>', unsafe_allow_html=True)
+            st.markdown(_elig_badge(elig_text), unsafe_allow_html=True)
+
+        # Premium
+        with c3:
+            st.markdown('<div class="kpi-title">Suggested Premium</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="kpi-value">{_format_usd(premium_usd)}</div>', unsafe_allow_html=True)
+
+        with st.expander("Debug: feature row", expanded=False):
+            st.dataframe(feature_row_df, use_container_width=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
 st.set_page_config(page_title="Novira.ai — Underwriter Risk Scorecard", page_icon="📊", layout="wide")
 st.title("🧠 Novira.ai — Underwriter Risk Scorecard (Minimal)")
 
@@ -150,6 +225,56 @@ if not ok:
 # ---------------------------
 # Feature row & scoring
 # ---------------------------
+def render_result_card(risk, elig, prem, X):
+    """Pretty results card with gradient bar + colored eligibility badge + premium."""
+    try:
+        risk_val = float(risk)
+    except Exception:
+        risk_val = 0.0
+
+    # Badge color by eligibility
+    if str(elig).lower().startswith("bind"):
+        badge_color = "#22c55e"   # green
+        badge_fg    = "#0b0f16"
+    elif str(elig).lower().startswith("review"):
+        badge_color = "#f59e0b"   # amber
+        badge_fg    = "#0b0f16"
+    else:
+        badge_color = "#ef4444"   # red
+        badge_fg    = "white"
+
+    card_html = f"""
+    <div style="background:#111827;border:1px solid #2d2f36;border-radius:16px;padding:18px 18px 12px;margin:6px 0;">
+      <div style="font-weight:700;font-size:18px;margin:0 0 10px 0;">Results</div>
+
+      <div style="height:10px;background:#27272a;border-radius:8px;overflow:hidden;">
+        <div style="height:100%;width:{risk_val:.1f}%;background:linear-gradient(90deg,#22d3ee,#a78bfa);"></div>
+      </div>
+
+      <div style="display:flex;gap:28px;align-items:baseline;margin-top:10px;flex-wrap:wrap">
+        <div>
+          <div style="opacity:.7;font-size:12px;margin-bottom:4px;">Risk Index</div>
+          <div style="font-size:26px;font-weight:800;letter-spacing:.3px">{risk_val:.1f} / 100</div>
+        </div>
+
+        <div>
+          <div style="opacity:.7;font-size:12px;margin-bottom:4px;">Eligibility</div>
+          <span style="display:inline-block;padding:4px 10px;border-radius:999px;background:{badge_color};color:{badge_fg};
+                       font-weight:800;letter-spacing:.3px">{elig}</span>
+        </div>
+
+        <div>
+          <div style="opacity:.7;font-size:12px;margin-bottom:4px;">Suggested Premium</div>
+          <div style="font-size:26px;font-weight:800">${prem:,.2f}</div>
+        </div>
+      </div>
+    </div>
+    """
+    import streamlit as st
+    st.markdown(card_html, unsafe_allow_html=True)
+
+    with st.expander("Debug: feature row", expanded=False):
+        st.dataframe(X)
 
 
 # Helper: clamp any value between 0–100
@@ -225,14 +350,8 @@ if score_btn:
         elig = eligibility_from_risk(risk)
         prem = suggested_premium_usd(risk)
 
-        c1, c2, c3 = right.columns(3)
-        c1.metric("Risk Index", f"{risk:.1f} / 100")
-        c2.metric("Eligibility", elig)
-        c3.metric("Suggested Premium", f"${prem:,.2f}")
-
-        # Optional: Debug view to inspect the feature row
-        with st.expander("Debug: feature row", expanded=False):
-            st.dataframe(X)
+        # ✅ Modern visual card
+        render_result_card(risk, elig, prem, X)
 
     except Exception as e:
         st.error("Scoring failed:")
