@@ -268,9 +268,10 @@ if score_btn:
         c1, c2, c3 = right.columns(3)
         c1.metric("Risk Index", f"{risk:.1f} / 100")
         c2.metric("Eligibility", elig)
-        c3.metric("Suggested Premium", f"${prem:,.2f}")
+      c3.metric("Suggested Premium", f"${prem:,.2f}")
 
-        with st.expander("Debug: feature
+
+        with st.expander("Debug: feature row", expanded=False):
 
 st.subheader("📦 Model placement (when you have real artifacts)")
 st.code(
