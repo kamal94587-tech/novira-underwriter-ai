@@ -205,7 +205,7 @@ if score_btn:
         c2.metric("Eligibility", elig)
         c3.metric("Suggested Premium", f"${prem:,.2f}")
 
-                with st.expander("🧪 Debug: feature row", expanded=False):
+                        with st.expander("🧪 Debug: feature row", expanded=False):
             st.dataframe(X)
     except Exception as e:
         st.error("Scoring failed:")
