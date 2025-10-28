@@ -270,9 +270,13 @@ if score_btn:
         c2.metric("Eligibility", elig)
         c3.metric("Suggested Premium", f"${prem:,.2f}")
 
-# Optional: Debug view to inspect the feature row
-with st.expander("Debug: feature row", expanded=False):
-    st.dataframe(X)
+        # Optional: Debug view to inspect the feature row
+        with st.expander("Debug: feature row", expanded=False):
+            st.dataframe(X)
+
+    except Exception as e:
+        st.error("Scoring failed:")
+        st.exception(e)
 
 st.subheader("📦 Model placement (when you have real artifacts)")
 st.code(
