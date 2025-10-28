@@ -165,9 +165,6 @@ def build_test_row(cols):
         if k in data: data[k] = v
     return pd.DataFrame([data], columns=names)
 
-    except Exception as e:
-        st.error("Scoring failed:")
-        st.exception(e)
 
 def predict_risk_index(model, X):
     if hasattr(model, "predict_proba"):
