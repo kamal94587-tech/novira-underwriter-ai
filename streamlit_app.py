@@ -242,11 +242,6 @@ if score_btn:
 # ---------------------------
 left, right = st.columns([0.6, 0.4])
 
-with left:
-    st.subheader("Test Shipment")
-    st.caption("Click to score a synthetic shipment. Uses dummy model if real artifacts aren’t uploaded yet.")
-    score_btn = st.button("⚡ Score test shipment", type="primary")
-
 with right:
     st.subheader("Results")
 
