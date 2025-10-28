@@ -150,6 +150,18 @@ if not ok:
 # ---------------------------
 # Feature row & scoring
 # ---------------------------
+
+
+# Helper: clamp any value between 0–100
+def to_0_100(x):
+    try:
+        import numpy as np
+        arr = np.asarray(x, dtype=float)
+        arr = np.clip(arr, 0, 100)
+        return arr.item() if arr.size == 1 else arr
+    except Exception:
+        return 0.0
+        
 def build_test_row(cols):
     names = list(cols) if isinstance(cols, (list, tuple, np.ndarray, pd.Index)) else (
         list(cols.get("columns", [])) if isinstance(cols, dict) else []
