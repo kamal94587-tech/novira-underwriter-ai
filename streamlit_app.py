@@ -165,6 +165,29 @@ def build_test_row(cols):
 def to_0_100(x): 
     try: return float(np.clip(x, 0, 100))
     except Exception: return 0.0
+if score_btn:
+    try:
+        X = build_test_row(feature_columns)
+        try:
+            X_in = scaler.transform(X)
+        except Exception:
+            X_in = X
+
+        risk = predict_risk_index(model, X_in)
+        elig = eligibility_from_risk(risk)
+        prem = suggested_premium_usd(risk)
+
+        c1, c2, c3 = right.columns(3)
+        c1.metric("Risk Index", f"{risk:.1f} / 100")
+        c2.metric("Eligibility", elig)
+        c3.metric("Suggested Premium", f"${prem:,.2f}")
+
+        with st.expander("Debug: feature row", expanded=False):
+            st.dataframe(X)
+
+    except Exception as e:
+        st.error("Scoring failed:")
+        st.exception(e)
 
 def predict_risk_index(model, X):
     if hasattr(model, "predict_proba"):
@@ -189,29 +212,6 @@ with left:
 with right:
     st.subheader("Results")
 
-if score_btn:
-    try:
-        X = build_test_row(feature_columns)
-        try:
-            X_in = scaler.transform(X)
-        except Exception:
-            X_in = X
-        risk = predict_risk_index(model, X_in)
-        elig = eligibility_from_risk(risk)
-        prem = suggested_premium_usd(risk)
-
-        c1, c2, c3 = right.columns(3)
-        c1.metric("Risk Index", f"{risk:.1f} / 100")
-        c2.metric("Eligibility", elig)
-        c3.metric("Suggested Premium", f"${prem:,.2f}")
-
-                        with st.expander("🧪 Debug: feature row", expanded=False):
-            st.dataframe(X)
-    except Exception as e:
-        st.error("Scoring failed:")
-        st.exception(e)
-
-st.markdown("---")
 st.subheader("📦 Model placement (when you have real artifacts)")
 st.code(
     "novira_underwriter_ai_enhanced_v2/model/\n"
