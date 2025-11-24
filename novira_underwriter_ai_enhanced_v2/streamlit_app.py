@@ -53,39 +53,38 @@ def premium_from_risk(r):
     multiplier = 1 + (r * 2.5)
     return round(base_price * multiplier, 2)
 
-st.subheader("🔥 Test Shipment (Auto-Generated)")
-
 if st.button("⚡ Score test shipment"):
-    shipment = generate_synthetic_shipment()
-    st.write("### 📦 Synthetic Shipment Generated")
-    st.json(shipment)
+    df = generate_synthetic_shipment()
+    risk, decision = predict_risk(df)
 
-    if model is None:
-        st.error("❌ Model & scaler not found. Upload your real artifacts into `/model/` folder.")
+    if risk is None:
+        st.error("Model artifacts not found. Upload them to the /model folder.")
     else:
-        risk_score = predict(model, scaler, shipment, feature_columns)
-        premium = premium_from_risk(risk_score)
+        st.subheader("Results")
 
-        st.success("Risk score calculated successfully!")
+        # Risk bar
+        st.progress(min(risk/100, 1.0))
 
-        col1, col2 = st.columns(2)
+        # Show Risk Score
+        st.markdown(f"""
+            <div style="font-size:32px; font-weight:800; margin-top:10px;">
+                {risk} / 100
+            </div>
+        """, unsafe_allow_html=True)
 
-        with col1:
-            st.metric("🔮 Risk Score", f"{risk_score:.3f}")
-
-        with col2:
-            st.metric("💰 Suggested Premium", f"${premium}")
-
-        st.write("---")
-
-        st.write("### 📊 Interpretation")
-        if risk_score < 0.25:
-            st.success("🟢 **LOW RISK** — Good shipment profile.")
-        elif risk_score < 0.60:
-            st.warning("🟡 **MEDIUM RISK** — Some factors need monitoring.")
-        else:
-            st.error("🔴 **HIGH RISK** — High risk of loss or delay.")
-
-st.write("---")
-
-st.info("Upload real model artifacts into `/model/model.pkl` and `/model/scaler.pkl` when ready.")
+        # Decision pill
+        pill_color = "#22cc55" if decision == "Approve" else "#cc2255"
+        st.markdown(f"""
+            <div style="
+                display:inline-block;
+                padding:6px 16px;
+                border-radius:999px;
+                background:{pill_color};
+                color:white;
+                font-weight:700;
+                font-size:14px;
+                margin-top:6px;
+            ">
+                {decision}
+            </div>
+        """, unsafe_allow_html=True)
