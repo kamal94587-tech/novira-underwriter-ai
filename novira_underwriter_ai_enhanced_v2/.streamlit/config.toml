@@ -1,28 +1,11 @@
 [server]
 headless = true
 
-[ui]
-hideTopBar = false
-
 [global]
 showWarningOnDirectExecution = false
 
-[runner]
-magicEnabled = false
-installTracer = false
-
-[client]
-toolbarMode = "minimal"
-
-[browser]
-gatherUsageStats = false
-
-[server.fileWatcherType]
-watcherType = "auto"
-
-[server.runOnSave]
-runOnSave = true
+[ui]
+hideTopBar = false
 
 [app]
-# 👇 This tells Streamlit which file to run
-main = "app/streamlit_app.py"
+file = "app/streamlit_app.py"
