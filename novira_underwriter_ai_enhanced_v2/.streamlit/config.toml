@@ -1,9 +1,6 @@
 [server]
 headless = true
 
-[global]
-showWarningOnDirectExecution = false
-
 [ui]
 hideTopBar = false
 
