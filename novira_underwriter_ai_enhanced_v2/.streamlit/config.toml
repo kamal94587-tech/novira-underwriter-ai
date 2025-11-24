@@ -8,4 +8,4 @@ showWarningOnDirectExecution = false
 hideTopBar = false
 
 [app]
-file = "app/streamlit_app.py"
+file = "streamlit_app.py"
