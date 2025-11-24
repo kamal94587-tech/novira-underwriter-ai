@@ -1,1 +1,3 @@
-avg_temp_c,temp_variance,humidity_change,shock_g,light_events,route_deviation_km,theft_zone_risk,weather_risk,carrier_score,device_uptime,transit_time_hr,declared_value_usd,cargo_type,packaging_type,claim
+origin,dest,weight,temperature,humidity,shock,distance,carrier_rating,shipment_value
+LAX,JFK,120.5,4.2,55.0,0.12,3980,4.7,25000
+ORD,MIA,87.0,6.1,60.0,0.05,1910,4.2,15000
