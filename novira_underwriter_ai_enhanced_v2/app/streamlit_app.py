@@ -1,91 +1,86 @@
 import streamlit as st
-import os
-import joblib
-import numpy as np
 import pandas as pd
+import numpy as np
+import joblib
+import os
 
-st.set_page_config(page_title="Novira.ai — Underwriter Risk Scorecard (Enhanced)", layout="wide")
 
-st.title("🧠 Novira.ai — Underwriter Risk Scorecard (Enhanced)")
-st.write("This enhanced version calculates a synthetic shipment, predicts risk, and provides premium suggestions.")
+# ------------------------------------------------
+# Load real model artifacts
+# ------------------------------------------------
 
-MODEL_PATH = "./model/model.pkl"
-SCALER_PATH = "./model/scaler.pkl"
-FEATURE_COLS_PATH = "./feature_columns.pkl"
+MODEL_DIR = "model"
 
-@st.cache_data(show_spinner=False)
+FEATURE_COLS_PATH = os.path.join(MODEL_DIR, "feature_columns.pkl")
+MODEL_PATH = os.path.join(MODEL_DIR, "risk_model.pkl")
+SCALER_PATH = os.path.join(MODEL_DIR, "scaler.pkl")
+
+
+@st.cache_resource
 def load_artifacts():
-    if not os.path.exists(MODEL_PATH) or not os.path.exists(SCALER_PATH):
+    try:
+        feature_cols = joblib.load(FEATURE_COLS_PATH)
+        model = joblib.load(MODEL_PATH)
+        scaler = joblib.load(SCALER_PATH)
+        return feature_cols, model, scaler
+    except Exception as e:
+        st.error("Failed to load model artifacts. Using dummy placeholders.")
         return None, None, None
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-    feature_cols = joblib.load(FEATURE_COLS_PATH)
-    return model, scaler, feature_cols
 
-model, scaler, feature_columns = load_artifacts()
 
+feature_columns, model, scaler = load_artifacts()
+
+
+# ------------------------------------------------
+# Synthetic shipment generator — 12 features
+# ------------------------------------------------
 def generate_synthetic_shipment():
-    shipment = {
-        "temp_avg": np.random.uniform(28, 65),
-        "temp_max": np.random.uniform(40, 75),
-        "humidity_avg": np.random.uniform(30, 90),
+    return pd.DataFrame([{
+        "distance_km": np.random.uniform(100, 2000),
+        "duration_hrs": np.random.uniform(5, 72),
+        "num_scans": np.random.randint(1, 20),
+        "avg_temp": np.random.uniform(-5, 25),
+        "min_temp": np.random.uniform(-10, 10),
+        "max_temp": np.random.uniform(10, 35),
+        "avg_humidity": np.random.uniform(30, 90),
         "shock_events": np.random.randint(0, 8),
-        "tilt_events": np.random.randint(0, 5),
-        "duration_hours": np.random.uniform(10, 300),
-        "distance_km": np.random.uniform(50, 2500),
-        "lane_risk_score": np.random.uniform(0.1, 0.9),
-        "package_density": np.random.uniform(0.1, 1.0),
-        "provider_reliability": np.random.uniform(0.5, 1.0),
-        "weather_severity_index": np.random.uniform(0.0, 1.0),
-        "historical_claim_prob": np.random.uniform(0.01, 0.25)
-    }
-    return shipment
+        "route_risk_score": np.random.uniform(0, 1),
+        "carrier_score": np.random.uniform(0, 1),
+        # Added features
+        "cargo_value_usd": np.random.uniform(5000, 500000),
+        "season_risk": np.random.uniform(0, 1)
+    }])
 
-def predict(model, scaler, record, feature_cols):
-    df = pd.DataFrame([record])
-    df = df[feature_cols]
-    X = scaler.transform(df)
-    risk = model.predict_proba(X)[0][1]
-    return risk
 
-def premium_from_risk(r):
-    base_price = 35
-    multiplier = 1 + (r * 2.5)
-    return round(base_price * multiplier, 2)
+# ------------------------------------------------
+# Prediction function
+# ------------------------------------------------
+def predict_risk(df):
+    if model is None or scaler is None or feature_columns is None:
+        return None, None
 
-st.subheader("🔥 Test Shipment (Auto-Generated)")
+    df = df[feature_columns]  # ensure correct column order
+    scaled = scaler.transform(df)
+    proba = model.predict_proba(scaled)[0][1]
+
+    return round(proba * 100, 2), "Decline" if proba > 0.5 else "Approve"
+
+
+# ------------------------------------------------
+# UI
+# ------------------------------------------------
+
+st.title("📦 Novira.ai — Underwriter Risk Scorecard (Enhanced)")
+
+st.write("Click to score a synthetic test shipment using the REAL model.")
 
 if st.button("⚡ Score test shipment"):
-    shipment = generate_synthetic_shipment()
-    st.write("### 📦 Synthetic Shipment Generated")
-    st.json(shipment)
+    df = generate_synthetic_shipment()
+    risk, decision = predict_risk(df)
 
-    if model is None:
-        st.error("❌ Model & scaler not found. Upload your real artifacts into `/model/` folder.")
+    if risk is None:
+        st.error("Model artifacts not found. Upload them to the /model folder.")
     else:
-        risk_score = predict(model, scaler, shipment, feature_columns)
-        premium = premium_from_risk(risk_score)
-
-        st.success("Risk score calculated successfully!")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric("🔮 Risk Score", f"{risk_score:.3f}")
-
-        with col2:
-            st.metric("💰 Suggested Premium", f"${premium}")
-
-        st.write("---")
-
-        st.write("### 📊 Interpretation")
-        if risk_score < 0.25:
-            st.success("🟢 **LOW RISK** — Good shipment profile.")
-        elif risk_score < 0.60:
-            st.warning("🟡 **MEDIUM RISK** — Some factors need monitoring.")
-        else:
-            st.error("🔴 **HIGH RISK** — High risk of loss or delay.")
-
-st.write("---")
-
-st.info("Upload real model artifacts into `/model/model.pkl` and `/model/scaler.pkl` when ready.")
+        st.subheader("Results")
+        st.write(f"**Risk Score:** {risk} / 100")
+        st.write(f"**Decision:** {decision}")
