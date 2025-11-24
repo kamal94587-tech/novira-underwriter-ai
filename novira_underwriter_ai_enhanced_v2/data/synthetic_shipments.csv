@@ -1,3 +1,0 @@
-origin,dest,weight,temperature,humidity,shock,distance,carrier_rating,shipment_value
-LAX,JFK,120.5,4.2,55.0,0.12,3980,4.7,25000
-ORD,MIA,87.0,6.1,60.0,0.05,1910,4.2,15000
